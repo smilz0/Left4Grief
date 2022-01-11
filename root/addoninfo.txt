@@ -1,0 +1,9 @@
+"AddonInfo"
+{
+  addonSteamAppID   	550
+  addontitle		"Left 4 Grief"
+  addonversion	    	"1.0"
+  addonauthor 	   	"smilzo"
+  addonDescription  	"Anti-Grief for Left 4 Dead"
+  addonContent_Script 	1
+}

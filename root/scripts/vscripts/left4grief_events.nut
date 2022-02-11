@@ -280,9 +280,11 @@ IncludeScript("left4lib_hooks");
 
 ::Left4Grief.AllowTakeDamage <- function (damageTable)
 {
-	damageTable.DamageDone = ::Left4Grief.OnDamage(damageTable.Victim, damageTable.Attacker, damageTable.DamageDone, damageTable);
-	if (damageTable.DamageDone <= 0)
+	local dmg = ::Left4Grief.OnDamage(damageTable.Victim, damageTable.Attacker, damageTable.DamageDone, damageTable);
+	if (dmg < 0)
 		return false;
+
+	damageTable.DamageDone = dmg;
 	
 	return true;
 }

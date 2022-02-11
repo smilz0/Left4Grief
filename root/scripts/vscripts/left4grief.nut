@@ -347,7 +347,7 @@ const LOG_LEVEL_DEBUG = 4;
 		if (attackerTeam == TEAM_SPECTATORS)
 		{
 			Left4Grief.Log(LOG_LEVEL_WARN, "Blocked bugged damage from spectator: " + attacker.GetPlayerName());
-			return 0;
+			return -1;
 		}
 		
 		if (attackerTeam != victimTeam)
@@ -356,7 +356,7 @@ const LOG_LEVEL_DEBUG = 4;
 		// Friendly fire!
 
 		if (Left4Grief.Settings.friendly_fire == 0)
-			return 0; // Friendly fire OFF
+			return -1; // Friendly fire OFF
 		
 		if (Left4Grief.L4F && Left4Fun.IsOnlineTroll(victim))
 			return damageDone;
@@ -365,7 +365,7 @@ const LOG_LEVEL_DEBUG = 4;
 		// but, for some reason, friendly fire goes through during the carry phase of the charger attack and when the survivor is being
 		// pounced by a hunter or trapped by the smoker's tongue... Here i block friendly fire for these too.
 		if (NetProps.GetPropInt(victim, "m_pounceAttacker") > 0 || NetProps.GetPropInt(victim, "m_tongueOwner") > 0 || NetProps.GetPropInt(victim, "m_carryAttacker") > 0)
-			return 0;
+			return -1;
 		
 		if ((Left4Grief.Settings.ricochet_users && !Left4Grief.IsOnlineAdmin(attacker) && !IsPlayerABot(attacker)) || (Left4Grief.Settings.ricochet_bots && IsPlayerABot(attacker)) || (Left4Grief.Settings.ricochet_admins && Left4Grief.IsOnlineAdmin(attacker)))
 		{

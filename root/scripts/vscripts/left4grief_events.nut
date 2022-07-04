@@ -278,6 +278,106 @@ IncludeScript("left4lib_hooks");
 	Left4Grief.OnHealStart(healee, healer, params);
 }
 
+::Left4Grief.Events.OnGameEvent_lunge_pounce <- function (params)
+{
+	if (!("victim" in params))
+		return;
+
+	local victim = g_MapScript.GetPlayerFromUserID(params["victim"]);
+	if (victim && victim.IsValid())
+		Left4Grief.PinStart(victim);
+}
+
+::Left4Grief.Events.OnGameEvent_pounce_end <- function (params)
+{
+	if (!("victim" in params))
+		return;
+	
+	local victim = g_MapScript.GetPlayerFromUserID(params["victim"]);
+	if (victim && victim.IsValid())
+		Left4Grief.PinStop(victim);
+}
+
+::Left4Grief.Events.OnGameEvent_tongue_grab <- function (params)
+{
+	if (!("victim" in params))
+		return;
+	
+	local victim = g_MapScript.GetPlayerFromUserID(params["victim"]);
+	if (victim && victim.IsValid())
+		Left4Grief.PinStart(victim);
+}
+
+::Left4Grief.Events.OnGameEvent_tongue_release <- function (params)
+{
+	if (!("victim" in params))
+		return;
+	
+	local victim = g_MapScript.GetPlayerFromUserID(params["victim"]);
+	if (victim && victim.IsValid())
+		Left4Grief.PinStop(victim);
+}
+
+::Left4Grief.Events.OnGameEvent_jockey_ride <- function (params)
+{
+	if (!("victim" in params))
+		return;
+	
+	local victim = g_MapScript.GetPlayerFromUserID(params["victim"]);
+	if (victim && victim.IsValid())
+		Left4Grief.PinStart(victim);
+}
+
+::Left4Grief.Events.OnGameEvent_jockey_ride_end <- function (params)
+{
+	if (!("victim" in params))
+		return;
+	
+	local victim = g_MapScript.GetPlayerFromUserID(params["victim"]);
+	if (victim && victim.IsValid())
+		Left4Grief.PinStop(victim);
+}
+
+::Left4Grief.Events.OnGameEvent_charger_carry_start <- function (params)
+{
+	if (!("victim" in params))
+		return;
+	
+	local victim = g_MapScript.GetPlayerFromUserID(params["victim"]);
+	if (victim && victim.IsValid())
+		Left4Grief.PinStart(victim);
+}
+
+::Left4Grief.Events.OnGameEvent_charger_carry_end <- function (params)
+{
+	if (!("victim" in params))
+		return;
+	
+	local victim = g_MapScript.GetPlayerFromUserID(params["victim"]);
+	if (victim && victim.IsValid())
+		Left4Grief.PinStop(victim);
+}
+
+::Left4Grief.Events.OnGameEvent_charger_pummel_start <- function (params)
+{
+	if (!("victim" in params))
+		return;
+	
+	local victim = g_MapScript.GetPlayerFromUserID(params["victim"]);
+	if (victim && victim.IsValid())
+		Left4Grief.PinStart(victim);
+}
+
+::Left4Grief.Events.OnGameEvent_charger_pummel_end <- function (params)
+{
+	if (!("victim" in params))
+		return;
+	
+	local victim = g_MapScript.GetPlayerFromUserID(params["victim"]);
+	if (victim && victim.IsValid())
+		Left4Grief.PinStop(victim);
+}
+
 ::Left4Grief.AllowTakeDamage <- function (damageTable)
 {
 	local dmg = ::Left4Grief.OnDamage(damageTable.Victim, damageTable.Attacker, damageTable.DamageDone, damageTable);

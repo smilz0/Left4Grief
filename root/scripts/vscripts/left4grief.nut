@@ -88,6 +88,8 @@ const LOG_LEVEL_DEBUG = 4;
 			revenge_kick = 0
 			punish_heal_onladder = 0
 			anti_disconnect_grief = 1
+			pin_invulnerability = 1
+			pin_invulnerability_time = 1.5
 			loglevel = 3
 		}
 		Admins = {}
@@ -95,6 +97,7 @@ const LOG_LEVEL_DEBUG = 4;
 		VoteAbortedOn = 0
 		VoteKickCaster = -1
 		Events = {}
+		Invulnerability = {}
 		L4F = false
 	}
 
@@ -210,6 +213,8 @@ const LOG_LEVEL_DEBUG = 4;
 			Left4Grief.Log(LOG_LEVEL_DEBUG, "L4F = false");
 		
 		Left4Timers.AddTimer("AntiRushCheck", ANTIRUSH_CHECK_DELAY, Left4Grief.AntiRushCheck, {}, true);
+		//Left4Timers.AddThinker("InvulnerabilityHandler", 0.2, Left4Grief.InvulnerabilityHandler, {});
+		Left4Timers.AddTimer("InvulnerabilityHandler", 0.2, Left4Grief.InvulnerabilityHandler, {}, true);
 		
 		foreach (player in ::Left4Utils.GetHumanPlayers())
 			Left4Grief.PlayerIn(player);
@@ -220,6 +225,8 @@ const LOG_LEVEL_DEBUG = 4;
 		Left4Grief.Log(LOG_LEVEL_DEBUG, "Left4Grief.OnRoundEnd - winner: " + winner + " - reason: " + reason + " - message: " + message + " - time: " + time);
 		
 		Left4Timers.RemoveTimer("AntiRushCheck");
+		//Left4Timers.RemoveThinker("InvulnerabilityHandler");
+		Left4Timers.RemoveTimer("InvulnerabilityHandler");
 	}
 
 	::Left4Grief.OnMapTransition <- function (params)
@@ -227,6 +234,8 @@ const LOG_LEVEL_DEBUG = 4;
 		Left4Grief.Log(LOG_LEVEL_DEBUG, "Left4Grief.OnMapTransition");
 		
 		Left4Timers.RemoveTimer("AntiRushCheck");
+		//Left4Timers.RemoveThinker("InvulnerabilityHandler");
+		Left4Timers.RemoveTimer("InvulnerabilityHandler");
 	}
 
 	::Left4Grief.AntiRushCheck <- function (args)
@@ -316,6 +325,77 @@ const LOG_LEVEL_DEBUG = 4;
 			Left4Grief.Log(LOG_LEVEL_INFO, txt);
 	}
 	
+/*
+	::Left4Grief.InvulnerabilityHandler <- function (args)
+	{
+		if (Left4Grief.Settings.pin_invulnerability)
+		{
+			foreach (player in ::Left4Utils.GetAliveSurvivors())
+			{
+				local id = player.GetPlayerUserId();
+				if (Left4Utils.IsPlayerHeld(player))
+					::Left4Grief.Invulnerability[id] <- { PE = player, TS = 0 };
+				else
+				{
+					if (id in ::Left4Grief.Invulnerability && ::Left4Grief.Invulnerability[id].TS <= 0)
+					{
+						::Left4Grief.Invulnerability[id].TS = Time(); // Timestamp of when the survivor was freed from the special infected
+						
+						Left4Grief.Log(LOG_LEVEL_DEBUG, "InvulnerabilityHandler - player " + player.GetPlayerName() + " (" + id + ") freed (" + ::Left4Grief.Invulnerability[id].TS + ")");
+					}
+				}
+			}
+		}
+		
+		foreach (id, inv in ::Left4Grief.Invulnerability)
+		{
+			if (!Left4Grief.Settings.pin_invulnerability || (inv.TS > 0 && (Time() - inv.TS) > Left4Grief.Settings.pin_invulnerability_time) || !inv.PE || !inv.PE.IsValid())
+			{
+				delete ::Left4Grief.Invulnerability[id];
+				
+				Left4Grief.Log(LOG_LEVEL_DEBUG, "InvulnerabilityHandler - player with id " + id + " no longer invulnerable");
+			}
+		}
+	}
+*/
+
+	::Left4Grief.PinStart <- function (player)
+	{
+		if (!Left4Grief.Settings.pin_invulnerability || NetProps.GetPropInt(player, "m_iTeamNum") != TEAM_SURVIVORS)
+			return;
+		
+		Left4Grief.Log(LOG_LEVEL_DEBUG, "PinStart - " + player.GetPlayerName());
+		
+		::Left4Grief.Invulnerability[player.GetPlayerUserId()] <- { PE = player, TS = 0 };
+		
+		Left4Grief.Log(LOG_LEVEL_DEBUG, "PinStart - player with id " + player.GetPlayerUserId() + " (" + player.GetPlayerName() + ") is invulnerable");
+	}
+	
+	::Left4Grief.PinStop <- function (player)
+	{
+		if (!Left4Grief.Settings.pin_invulnerability || NetProps.GetPropInt(player, "m_iTeamNum") != TEAM_SURVIVORS)
+			return;
+		
+		Left4Grief.Log(LOG_LEVEL_DEBUG, "PinStop - " + player.GetPlayerName());
+		
+		::Left4Grief.Invulnerability[player.GetPlayerUserId()] <- { PE = player, TS = Time() };
+		
+		Left4Grief.Log(LOG_LEVEL_DEBUG, "PinStop - player with id " + player.GetPlayerUserId() + " (" + player.GetPlayerName() + ") is invulnerable");
+	}
+
+	::Left4Grief.InvulnerabilityHandler <- function (args)
+	{
+		foreach (id, inv in ::Left4Grief.Invulnerability)
+		{
+			if (!Left4Grief.Settings.pin_invulnerability || (inv.TS > 0 && (Time() - inv.TS) > Left4Grief.Settings.pin_invulnerability_time) || !inv.PE || !inv.PE.IsValid())
+			{
+				delete ::Left4Grief.Invulnerability[id];
+				
+				Left4Grief.Log(LOG_LEVEL_DEBUG, "InvulnerabilityHandler - player with id " + id + " no longer invulnerable");
+			}
+		}
+	}
+	
 	::Left4Grief.OnDamage <- function (victim, attacker, damageDone, damageTable)
 	{
 		if (damageDone <= 0 || victim == null || !victim.IsPlayer())
@@ -364,7 +444,9 @@ const LOG_LEVEL_DEBUG = 4;
 		// Friendly fire towards a survivor who is being ridden by a jockey or pummeled by a charger is already blocked by the game
 		// but, for some reason, friendly fire goes through during the carry phase of the charger attack and when the survivor is being
 		// pounced by a hunter or trapped by the smoker's tongue... Here i block friendly fire for these too.
-		if (NetProps.GetPropInt(victim, "m_pounceAttacker") > 0 || NetProps.GetPropInt(victim, "m_tongueOwner") > 0 || NetProps.GetPropInt(victim, "m_carryAttacker") > 0)
+		//if (NetProps.GetPropInt(victim, "m_pounceAttacker") > 0 || NetProps.GetPropInt(victim, "m_tongueOwner") > 0 || NetProps.GetPropInt(victim, "m_carryAttacker") > 0)
+		//	return -1;
+		if (victim.GetPlayerUserId() in ::Left4Grief.Invulnerability)
 			return -1;
 		
 		if ((Left4Grief.Settings.ricochet_users && !Left4Grief.IsOnlineAdmin(attacker) && !IsPlayerABot(attacker)) || (Left4Grief.Settings.ricochet_bots && IsPlayerABot(attacker)) || (Left4Grief.Settings.ricochet_admins && Left4Grief.IsOnlineAdmin(attacker)))

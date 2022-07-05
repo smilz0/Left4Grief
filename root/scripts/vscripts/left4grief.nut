@@ -89,7 +89,7 @@ const LOG_LEVEL_DEBUG = 4;
 			punish_heal_onladder = 0
 			anti_disconnect_grief = 1
 			pin_invulnerability = 1
-			pin_invulnerability_time = 1.5
+			pin_invulnerability_time = 1.0
 			loglevel = 3
 		}
 		Admins = {}

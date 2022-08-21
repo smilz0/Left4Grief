@@ -76,6 +76,7 @@ const LOG_LEVEL_DEBUG = 4;
 			ricochet_burn_damagefactor = 0.1
 			ricochet_blast_damagefactor = 0.1
 			friendly_fire = 1
+			friendly_fire_admins = 1
 			user_can_cast_vote = 1
 			admin_can_abort_vote = 1
 			vote_change_difficulty = 1
@@ -435,33 +436,67 @@ const LOG_LEVEL_DEBUG = 4;
 		
 		// Friendly fire!
 
-		if (Left4Grief.Settings.friendly_fire == 0)
-			return -1; // Friendly fire OFF
-		
-		if (Left4Grief.L4F && Left4Fun.IsOnlineTroll(victim))
-			return damageDone;
-		
-		// Friendly fire towards a survivor who is being ridden by a jockey or pummeled by a charger is already blocked by the game
-		// but, for some reason, friendly fire goes through during the carry phase of the charger attack and when the survivor is being
-		// pounced by a hunter or trapped by the smoker's tongue... Here i block friendly fire for these too.
-		//if (NetProps.GetPropInt(victim, "m_pounceAttacker") > 0 || NetProps.GetPropInt(victim, "m_tongueOwner") > 0 || NetProps.GetPropInt(victim, "m_carryAttacker") > 0)
-		//	return -1;
-		if (victim.GetPlayerUserId() in ::Left4Grief.Invulnerability)
-			return -1;
-		
-		if ((Left4Grief.Settings.ricochet_users && !Left4Grief.IsOnlineAdmin(attacker) && !IsPlayerABot(attacker)) || (Left4Grief.Settings.ricochet_bots && IsPlayerABot(attacker)) || (Left4Grief.Settings.ricochet_admins && Left4Grief.IsOnlineAdmin(attacker)))
+		if (Left4Grief.IsOnlineAdmin(attacker))
 		{
-			// Ricochet
-			if ((damageTable.DamageType & DMG_BURN) != 0)
-				attacker.TakeDamage(damageDone * Left4Grief.Settings.ricochet_burn_damagefactor, damageTable.DamageType, attacker);
-			else if ((damageTable.DamageType & DMG_BLAST) != 0)
-				attacker.TakeDamage(damageDone * Left4Grief.Settings.ricochet_blast_damagefactor, damageTable.DamageType, attacker);
-			else
-				attacker.TakeDamage(damageDone * Left4Grief.Settings.ricochet_damagefactor, damageTable.DamageType, attacker);
+			if (Left4Grief.Settings.friendly_fire_admins == 0)
+				return -1; // Friendly fire OFF
+			
+			if (Left4Grief.L4F && Left4Fun.IsOnlineTroll(victim))
+				return damageDone;
+			
+			// Friendly fire towards a survivor who is being ridden by a jockey or pummeled by a charger is already blocked by the game
+			// but, for some reason, friendly fire goes through during the carry phase of the charger attack and when the survivor is being
+			// pounced by a hunter or trapped by the smoker's tongue... Here i block friendly fire for these too.
+			//if (NetProps.GetPropInt(victim, "m_pounceAttacker") > 0 || NetProps.GetPropInt(victim, "m_tongueOwner") > 0 || NetProps.GetPropInt(victim, "m_carryAttacker") > 0)
+			//	return -1;
+			if (victim.GetPlayerUserId() in ::Left4Grief.Invulnerability)
+				return -1;
+			
+			if (Left4Grief.Settings.ricochet_admins)
+			{
+				// Ricochet
+				if ((damageTable.DamageType & DMG_BURN) != 0)
+					attacker.TakeDamage(damageDone * Left4Grief.Settings.ricochet_burn_damagefactor, damageTable.DamageType, attacker);
+				else if ((damageTable.DamageType & DMG_BLAST) != 0)
+					attacker.TakeDamage(damageDone * Left4Grief.Settings.ricochet_blast_damagefactor, damageTable.DamageType, attacker);
+				else
+					attacker.TakeDamage(damageDone * Left4Grief.Settings.ricochet_damagefactor, damageTable.DamageType, attacker);
 
-			return 0.0001; // Damage is pretty much next to 0 and totally insignificant but there are 2 pros of returning this instead of 0:
-						   //  1. this will still be counted as friendly fire accident in the attacker's final stats (and in the console as "XXX attacked YYY")
-						   //  2. the victim will still play friendly fire reactions so he can be aware of it
+				return 0.0001; // Damage is pretty much next to 0 and totally insignificant but there are 2 pros of returning this instead of 0:
+							   //  1. this will still be counted as friendly fire accident in the attacker's final stats (and in the console as "XXX attacked YYY")
+							   //  2. the victim will still play friendly fire reactions so he can be aware of it
+			}
+		}
+		else
+		{
+			if (Left4Grief.Settings.friendly_fire == 0)
+				return -1; // Friendly fire OFF
+			
+			if (Left4Grief.L4F && Left4Fun.IsOnlineTroll(victim))
+				return damageDone;
+			
+			// Friendly fire towards a survivor who is being ridden by a jockey or pummeled by a charger is already blocked by the game
+			// but, for some reason, friendly fire goes through during the carry phase of the charger attack and when the survivor is being
+			// pounced by a hunter or trapped by the smoker's tongue... Here i block friendly fire for these too.
+			//if (NetProps.GetPropInt(victim, "m_pounceAttacker") > 0 || NetProps.GetPropInt(victim, "m_tongueOwner") > 0 || NetProps.GetPropInt(victim, "m_carryAttacker") > 0)
+			//	return -1;
+			if (victim.GetPlayerUserId() in ::Left4Grief.Invulnerability)
+				return -1;
+			
+			if ((Left4Grief.Settings.ricochet_users && !IsPlayerABot(attacker)) || (Left4Grief.Settings.ricochet_bots && IsPlayerABot(attacker)))
+			{
+				// Ricochet
+				if ((damageTable.DamageType & DMG_BURN) != 0)
+					attacker.TakeDamage(damageDone * Left4Grief.Settings.ricochet_burn_damagefactor, damageTable.DamageType, attacker);
+				else if ((damageTable.DamageType & DMG_BLAST) != 0)
+					attacker.TakeDamage(damageDone * Left4Grief.Settings.ricochet_blast_damagefactor, damageTable.DamageType, attacker);
+				else
+					attacker.TakeDamage(damageDone * Left4Grief.Settings.ricochet_damagefactor, damageTable.DamageType, attacker);
+
+				return 0.0001; // Damage is pretty much next to 0 and totally insignificant but there are 2 pros of returning this instead of 0:
+							   //  1. this will still be counted as friendly fire accident in the attacker's final stats (and in the console as "XXX attacked YYY")
+							   //  2. the victim will still play friendly fire reactions so he can be aware of it
+			}
 		}
 		
 		// Normal friendly fire

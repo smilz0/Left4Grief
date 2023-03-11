@@ -378,6 +378,26 @@ IncludeScript("left4lib_hooks");
 		Left4Grief.PinStop(victim);
 }
 
+::Left4Grief.Events.OnGameEvent_triggered_car_alarm <- function (params)
+{
+	if (!("userid" in params))
+		return;
+	
+	local player = g_MapScript.GetPlayerFromUserID(params["userid"]);
+	if (player && player.IsValid())
+		Left4Grief.TriggeredCarAlarm(player);
+}
+
+::Left4Grief.Events.OnGameEvent_create_panic_event <- function (params)
+{
+	if (!("userid" in params))
+		return;
+	
+	local player = g_MapScript.GetPlayerFromUserID(params["userid"]);
+	if (player && player.IsValid())
+		Left4Grief.CreatePanicEvent(player);
+}
+
 ::Left4Grief.AllowTakeDamage <- function (damageTable)
 {
 	local dmg = ::Left4Grief.OnDamage(damageTable.Victim, damageTable.Attacker, damageTable.DamageDone, damageTable);

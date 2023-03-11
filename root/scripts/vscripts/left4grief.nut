@@ -75,6 +75,8 @@ const LOG_LEVEL_DEBUG = 4;
 			ricochet_damagefactor = 1
 			ricochet_burn_damagefactor = 0.1
 			ricochet_blast_damagefactor = 0.1
+			fault_admin_alert = 1
+			fault_public_alert = 0
 			friendly_fire = 1
 			friendly_fire_admins = 1
 			user_can_cast_vote = 1
@@ -99,6 +101,8 @@ const LOG_LEVEL_DEBUG = 4;
 		VoteKickCaster = -1
 		Events = {}
 		Invulnerability = {}
+		LastRusherID = null
+		LastRusherTime = 0
 		L4F = false
 	}
 
@@ -213,6 +217,8 @@ const LOG_LEVEL_DEBUG = 4;
 		else
 			Left4Grief.Log(LOG_LEVEL_DEBUG, "L4F = false");
 		
+		::ConceptsHub.SetHandler("Left4Grief", Left4Grief.OnConcept);
+		
 		Left4Timers.AddTimer("AntiRushCheck", ANTIRUSH_CHECK_DELAY, Left4Grief.AntiRushCheck, {}, true);
 		//Left4Timers.AddThinker("InvulnerabilityHandler", 0.2, Left4Grief.InvulnerabilityHandler, {});
 		Left4Timers.AddTimer("InvulnerabilityHandler", 0.2, Left4Grief.InvulnerabilityHandler, {}, true);
@@ -239,6 +245,39 @@ const LOG_LEVEL_DEBUG = 4;
 		Left4Timers.RemoveTimer("InvulnerabilityHandler");
 	}
 
+	::Left4Grief.AdminAlert <- function (text)
+	{
+		foreach (userid in Left4Grief.OnlineAdmins)
+		{
+			local player = g_MapScript.GetPlayerFromUserID(userid);
+			if (player)
+				ClientPrint(player, 3, "\x04" + text);
+		}
+	}
+
+	::Left4Grief.OnConcept <- function (concept, query)
+	{
+		if (concept != "Fault" || (!Left4Grief.Settings.fault_admin_alert && !Left4Grief.Settings.fault_public_alert))
+			return;
+		
+		local who = Left4Utils.GetSurvivorFromActor(query.who);
+		if (!who || !who.IsValid() || !("IsPlayer" in who) || !who.IsPlayer())
+			return;
+		
+		Left4Grief.Fault(who, query.faultname);
+	}
+
+	::Left4Grief.Fault <- function (player, fault)
+	{
+		local txt = "[FAULT]: " + player.GetPlayerName() + " -> " + fault;
+			
+		if (Left4Grief.Settings.fault_admin_alert)
+			Left4Grief.AdminAlert(txt);
+			
+		if (Left4Grief.Settings.fault_public_alert)
+			ClientPrint(null, 3, "\x04" + txt);
+	}
+
 	::Left4Grief.AntiRushCheck <- function (args)
 	{
 		if (Left4Grief.Settings.antirush_distance <= 0 || (!Left4Grief.Settings.antirush_admins && !Left4Grief.Settings.antirush_users))
@@ -263,7 +302,17 @@ const LOG_LEVEL_DEBUG = 4;
 		local dist = (rusher.GetOrigin() - nearest.GetOrigin()).Length();
 	  
 		if (dist > Left4Grief.Settings.antirush_distance)
+		{
 			Left4Grief.PunishRusher(rusher);
+			
+			if (rusher.GetPlayerUserId() != Left4Grief.LastRusherID || (Time() - Left4Grief.LastRusherTime) > 60.0)
+			{
+				Left4Grief.LastRusherID = rusher.GetPlayerUserId();
+				Left4Grief.LastRusherTime = Time();
+				
+				Left4Grief.Fault(rusher, "Rushing");
+			}
+		}
 	}
 
 	::Left4Grief.PunishRusher <- function (rusher)
@@ -384,6 +433,20 @@ const LOG_LEVEL_DEBUG = 4;
 		Left4Grief.Log(LOG_LEVEL_DEBUG, "PinStop - player with id " + player.GetPlayerUserId() + " (" + player.GetPlayerName() + ") is invulnerable");
 	}
 
+	::Left4Grief.TriggeredCarAlarm <- function (player)
+	{
+		Left4Grief.Log(LOG_LEVEL_DEBUG, "TriggeredCarAlarm - " + player.GetPlayerName());
+		
+		Left4Grief.Fault(player, "TriggeredCarAlarm");
+	}
+
+	::Left4Grief.CreatePanicEvent <- function (player)
+	{
+		Left4Grief.Log(LOG_LEVEL_DEBUG, "CreatePanicEvent - " + player.GetPlayerName());
+		
+		Left4Grief.Fault(player, "CreatePanicEvent");
+	}
+
 	::Left4Grief.InvulnerabilityHandler <- function (args)
 	{
 		foreach (id, inv in ::Left4Grief.Invulnerability)
@@ -455,12 +518,21 @@ const LOG_LEVEL_DEBUG = 4;
 			if (Left4Grief.Settings.ricochet_admins)
 			{
 				// Ricochet
+				/*
 				if ((damageTable.DamageType & DMG_BURN) != 0)
 					attacker.TakeDamage(damageDone * Left4Grief.Settings.ricochet_burn_damagefactor, damageTable.DamageType, attacker);
 				else if ((damageTable.DamageType & DMG_BLAST) != 0)
 					attacker.TakeDamage(damageDone * Left4Grief.Settings.ricochet_blast_damagefactor, damageTable.DamageType, attacker);
 				else
 					attacker.TakeDamage(damageDone * Left4Grief.Settings.ricochet_damagefactor, damageTable.DamageType, attacker);
+				*/
+
+				if ((damageTable.DamageType & DMG_BURN) != 0)
+					attacker.TakeDamageEx(damageTable.Inflictor, attacker, damageTable.Weapon, Vector(0,0,0), damageTable.Location, damageDone * Left4Grief.Settings.ricochet_burn_damagefactor, damageTable.DamageType);
+				else if ((damageTable.DamageType & DMG_BLAST) != 0)
+					attacker.TakeDamageEx(damageTable.Inflictor, attacker, damageTable.Weapon, Vector(0,0,0), damageTable.Location, damageDone * Left4Grief.Settings.ricochet_blast_damagefactor, damageTable.DamageType);
+				else
+					attacker.TakeDamageEx(damageTable.Inflictor, attacker, damageTable.Weapon, Vector(0,0,0), damageTable.Location, damageDone * Left4Grief.Settings.ricochet_damagefactor, damageTable.DamageType);
 
 				return 0.0001; // Damage is pretty much next to 0 and totally insignificant but there are 2 pros of returning this instead of 0:
 							   //  1. this will still be counted as friendly fire accident in the attacker's final stats (and in the console as "XXX attacked YYY")
@@ -486,12 +558,21 @@ const LOG_LEVEL_DEBUG = 4;
 			if ((Left4Grief.Settings.ricochet_users && !IsPlayerABot(attacker)) || (Left4Grief.Settings.ricochet_bots && IsPlayerABot(attacker)))
 			{
 				// Ricochet
+				/*
 				if ((damageTable.DamageType & DMG_BURN) != 0)
 					attacker.TakeDamage(damageDone * Left4Grief.Settings.ricochet_burn_damagefactor, damageTable.DamageType, attacker);
 				else if ((damageTable.DamageType & DMG_BLAST) != 0)
 					attacker.TakeDamage(damageDone * Left4Grief.Settings.ricochet_blast_damagefactor, damageTable.DamageType, attacker);
 				else
 					attacker.TakeDamage(damageDone * Left4Grief.Settings.ricochet_damagefactor, damageTable.DamageType, attacker);
+				*/
+				
+				if ((damageTable.DamageType & DMG_BURN) != 0)
+					attacker.TakeDamageEx(damageTable.Inflictor, attacker, damageTable.Weapon, Vector(0,0,0), damageTable.Location, damageDone * Left4Grief.Settings.ricochet_burn_damagefactor, damageTable.DamageType);
+				else if ((damageTable.DamageType & DMG_BLAST) != 0)
+					attacker.TakeDamageEx(damageTable.Inflictor, attacker, damageTable.Weapon, Vector(0,0,0), damageTable.Location, damageDone * Left4Grief.Settings.ricochet_blast_damagefactor, damageTable.DamageType);
+				else
+					attacker.TakeDamageEx(damageTable.Inflictor, attacker, damageTable.Weapon, Vector(0,0,0), damageTable.Location, damageDone * Left4Grief.Settings.ricochet_damagefactor, damageTable.DamageType);
 
 				return 0.0001; // Damage is pretty much next to 0 and totally insignificant but there are 2 pros of returning this instead of 0:
 							   //  1. this will still be counted as friendly fire accident in the attacker's final stats (and in the console as "XXX attacked YYY")
@@ -687,6 +768,8 @@ const LOG_LEVEL_DEBUG = 4;
 		
 			Left4Timers.AddTimer(null, 0.1, Left4Grief.RemoveMedkit, { player = healer });
 		}
+		
+		Left4Grief.Fault(healer, "HealOnLadder");
 	}
 	
 	::Left4Grief.RemoveMedkit <- function (params)

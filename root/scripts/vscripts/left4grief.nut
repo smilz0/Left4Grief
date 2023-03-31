@@ -208,6 +208,11 @@ const LOG_LEVEL_DEBUG = 4;
 	{
 		Left4Grief.Log(LOG_LEVEL_DEBUG, "Left4Grief.OnRoundStart");
 		
+		// Apparently, when scriptedmode is enabled and this director option isn't set, there is a big stutter (for the host)
+		// when a witch is chasing a survivor and that survivor enters the saferoom. Simply having a value for this key, removes the stutter
+		if (!("AllowWitchesInCheckpoints" in DirectorScript.GetDirectorOptions()))
+			DirectorScript.GetDirectorOptions().AllowWitchesInCheckpoints <- false;
+		
 		if ("Left4Fun" in getroottable() && "IsOnlineTroll" in ::Left4Fun)
 		{
 			Left4Grief.L4F = true;

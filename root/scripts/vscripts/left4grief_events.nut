@@ -7,64 +7,6 @@ Msg("Including left4grief_events...\n");
 
 IncludeScript("left4lib_hooks");
 
-// "userid"	"short"		// user ID on server
-// "index"	"byte"		// player slot (entity index-1)	
-::Left4Grief.Events.OnGameEvent_player_connect_full <- function (params)
-{
-	local userid = params["userid"];
-	local player = g_MapScript.GetPlayerFromUserID(userid);
-	
-	Left4Grief.Log(LOG_LEVEL_DEBUG, "Player connected: " + player.GetPlayerName() + " - " + player.GetNetworkIDString());
-	
-	Left4Grief.PlayerIn(player);
-}
-
-::Left4Grief.Events.OnGameEvent_player_disconnect <- function (params)
-{
-	if ("userid" in params)
-	{
-		local userid = params["userid"].tointeger();
-		local player = g_MapScript.GetPlayerFromUserID(userid);
-	
-		Left4Grief.RemoveOwnedEntities(player);
-	
-		if (player && player.IsValid() && IsPlayerABot(player))
-			return;
-	
-		//Left4Grief.Log(LOG_LEVEL_DEBUG, "Player disconnected: " + player.GetPlayerName());
-	
-		Left4Grief.PlayerOut(userid, player);
-	}
-}
-
-// "userid"	"short"		// user ID on server
-::Left4Grief.Events.OnGameEvent_player_spawn <- function (params)
-{
-	local userid = params["userid"];
-	local player = g_MapScript.GetPlayerFromUserID(userid);
-	
-	if (IsPlayerABot(player))
-		return;
-	
-	local steamid = player.GetNetworkIDString();
-	Left4Grief.Log(LOG_LEVEL_DEBUG, "Player spawned: " + player.GetPlayerName() + " - " + steamid);
-	
-	Left4Grief.PlayerIn(player);
-}
-
-// short	bot			user ID of the bot
-// short	player		user ID of the player
-::Left4Grief.Events.OnGameEvent_bot_player_replace <- function (params)
-{
-	local userid = params["player"];
-	local player = g_MapScript.GetPlayerFromUserID(userid);
-	
-	local steamid = player.GetNetworkIDString();
-	Left4Grief.Log(LOG_LEVEL_DEBUG, "Player replaced bot: " + player.GetPlayerName() + " - " + steamid);
-	
-	Left4Grief.PlayerIn(player);
-}
-
 ::Left4Grief.Events.OnGameEvent_round_start <- function (params)
 {
 	Left4Grief.OnRoundStart(params);
@@ -227,7 +169,7 @@ IncludeScript("left4lib_hooks");
 			// Abort the vote if an admin voted NO
 			//local target = g_MapScript.GetPlayerFromUserID(entityIndex);
 			local target = g_MapScript.PlayerInstanceFromIndex(entityIndex);
-			if (Left4Grief.Settings.admin_can_abort_vote != 0 && Left4Grief.IsOnlineAdmin(target))
+			if (Left4Grief.Settings.admin_can_abort_vote != 0 && Left4Users.GetOnlineUserLevel(target.GetPlayerUserId()) >= L4U_LEVEL.Admin)
 			{
 				// Abort the vote
 				NetProps.SetPropIntArray(voteControllerEnt, "m_votesYes", 1, 0);

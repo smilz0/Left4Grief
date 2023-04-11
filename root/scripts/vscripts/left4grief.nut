@@ -9,6 +9,8 @@ if (!IncludeScript("left4lib_utils"))
 	error("[L4G][ERROR] Failed to include 'left4lib_utils', please make sure the 'Left 4 Lib' addon is installed and enabled!\n");
 if (!IncludeScript("left4lib_timers"))
 	error("[L4G][ERROR] Failed to include 'left4lib_timers', please make sure the 'Left 4 Lib' addon is installed and enabled!\n");
+if (!IncludeScript("left4lib_users"))
+	error("[L4G][ERROR] Failed to include 'left4lib_users', please make sure the 'Left 4 Lib' addon is installed and enabled!\n");
 
 IncludeScript("left4grief_requirements");
 
@@ -95,15 +97,12 @@ const LOG_LEVEL_DEBUG = 4;
 			pin_invulnerability_time = 1.0
 			loglevel = 3
 		}
-		Admins = {}
-		OnlineAdmins = []
 		VoteAbortedOn = 0
 		VoteKickCaster = -1
 		Events = {}
 		Invulnerability = {}
 		LastRusherID = null
 		LastRusherTime = 0
-		L4F = false
 	}
 
 	::Left4Grief.Log <- function (level, text)
@@ -140,68 +139,7 @@ const LOG_LEVEL_DEBUG = 4;
 		Left4Utils.SaveSettingsToFile("left4grief/cfg/settings.txt", ::Left4Grief.Settings, Left4Grief.Log);
 		Left4Utils.PrintSettings(::Left4Grief.Settings, Left4Grief.Log, "[Settings] ");
 		
-		Left4Grief.Log(LOG_LEVEL_INFO, "Loading admins...");
-		::Left4Grief.Admins = Left4Utils.LoadAdminsFromFile("left4grief/cfg/admins.txt", Left4Grief.Log);
-		Left4Grief.Log(LOG_LEVEL_INFO, "Loaded " + Left4Grief.Admins.len() + " admins");
-		
 		Left4Grief.Initialized = true;
-	}
-
-	::Left4Grief.IsAdmin <- function (player)
-	{
-		if (!player)
-			return false;
-
-		local steamid = player.GetNetworkIDString();
-		if (!steamid || steamid == "BOT")
-			return false;
-
-		if (steamid in ::Left4Grief.Admins)
-			return true;
-		
-		if (GetListenServerHost() == player || Director.IsSinglePlayerGame())
-		{
-			Left4Grief.Admins[steamid] <- player.GetPlayerName();
-			
-			Left4Utils.SaveAdminsToFile("left4grief/cfg/admins.txt", ::Left4Grief.Admins);
-
-			return true;
-		}
-		return false;
-	}
-
-	::Left4Grief.IsOnlineAdmin <- function (player)
-	{
-		if (!player)
-			return false;
-		
-		if (Left4Grief.OnlineAdmins.find(player.GetPlayerUserId()) != null)
-			return true;
-		else
-			return false;
-	}
-
-	::Left4Grief.PlayerIn <- function (player)
-	{
-		local userid = player.GetPlayerUserId().tointeger();
-		
-		if (Left4Grief.OnlineAdmins.find(userid) == null && Left4Grief.IsAdmin(player))
-		{
-			Left4Grief.Log(LOG_LEVEL_INFO, "Adding admin with userid: " + userid);
-		
-			Left4Grief.OnlineAdmins.push(userid);
-			Left4Grief.OnlineAdmins.sort();
-		}
-	}
-
-	::Left4Grief.PlayerOut <- function (userid, player)
-	{
-		local idx = Left4Grief.OnlineAdmins.find(userid);
-		if (idx != null)
-		{
-			Left4Grief.OnlineAdmins.remove(idx);
-			Left4Grief.Log(LOG_LEVEL_INFO, "OnlineAdmin removed with idx: " + idx);
-		}
 	}
 
 	::Left4Grief.OnRoundStart <- function (player)
@@ -213,23 +151,11 @@ const LOG_LEVEL_DEBUG = 4;
 		if (!("AllowWitchesInCheckpoints" in DirectorScript.GetDirectorOptions()))
 			DirectorScript.GetDirectorOptions().AllowWitchesInCheckpoints <- false;
 		
-		if ("Left4Fun" in getroottable() && "IsOnlineTroll" in ::Left4Fun)
-		{
-			Left4Grief.L4F = true;
-			
-			Left4Grief.Log(LOG_LEVEL_DEBUG, "L4F = true");
-		}
-		else
-			Left4Grief.Log(LOG_LEVEL_DEBUG, "L4F = false");
-		
 		::ConceptsHub.SetHandler("Left4Grief", Left4Grief.OnConcept);
 		
 		Left4Timers.AddTimer("AntiRushCheck", ANTIRUSH_CHECK_DELAY, Left4Grief.AntiRushCheck, {}, true);
 		//Left4Timers.AddThinker("InvulnerabilityHandler", 0.2, Left4Grief.InvulnerabilityHandler, {});
 		Left4Timers.AddTimer("InvulnerabilityHandler", 0.2, Left4Grief.InvulnerabilityHandler, {}, true);
-		
-		foreach (player in ::Left4Utils.GetHumanPlayers())
-			Left4Grief.PlayerIn(player);
 	}
 
 	::Left4Grief.OnRoundEnd <- function (winner, reason, message, time, params)
@@ -250,16 +176,6 @@ const LOG_LEVEL_DEBUG = 4;
 		Left4Timers.RemoveTimer("InvulnerabilityHandler");
 	}
 
-	::Left4Grief.AdminAlert <- function (text)
-	{
-		foreach (userid in Left4Grief.OnlineAdmins)
-		{
-			local player = g_MapScript.GetPlayerFromUserID(userid);
-			if (player)
-				ClientPrint(player, 3, "\x04" + text);
-		}
-	}
-
 	::Left4Grief.OnConcept <- function (concept, query)
 	{
 		if (concept != "Fault" || (!Left4Grief.Settings.fault_admin_alert && !Left4Grief.Settings.fault_public_alert))
@@ -277,7 +193,7 @@ const LOG_LEVEL_DEBUG = 4;
 		local txt = "[FAULT]: " + player.GetPlayerName() + " -> " + fault;
 			
 		if (Left4Grief.Settings.fault_admin_alert)
-			Left4Grief.AdminAlert(txt);
+			Left4Users.AdminNotice("\x04" + txt);
 			
 		if (Left4Grief.Settings.fault_public_alert)
 			ClientPrint(null, 3, "\x04" + txt);
@@ -297,7 +213,8 @@ const LOG_LEVEL_DEBUG = 4;
 		if (!rusher || IsPlayerABot(rusher))
 			return;
 	  
-		if ((!Left4Grief.Settings.antirush_users && !Left4Grief.IsOnlineAdmin(rusher)) || (!Left4Grief.Settings.antirush_admins && Left4Grief.IsOnlineAdmin(rusher)))
+		local rl = Left4Users.GetOnlineUserLevel(rusher.GetPlayerUserId());
+		if ((!Left4Grief.Settings.antirush_users && rl < L4U_LEVEL.Admin) || (!Left4Grief.Settings.antirush_admins && rl >= L4U_LEVEL.Admin))
 			return;
 	  
 		local nearest = Left4Utils.GetNearestAliveSurvivor(rusher);
@@ -504,12 +421,12 @@ const LOG_LEVEL_DEBUG = 4;
 		
 		// Friendly fire!
 
-		if (Left4Grief.IsOnlineAdmin(attacker))
+		if (Left4Users.GetOnlineUserLevel(attacker.GetPlayerUserId()) >= L4U_LEVEL.Admin)
 		{
 			if (Left4Grief.Settings.friendly_fire_admins == 0)
 				return -1; // Friendly fire OFF
 			
-			if (Left4Grief.L4F && Left4Fun.IsOnlineTroll(victim))
+			if (Left4Users.GetOnlineUserLevel(victim.GetPlayerUserId()) < L4U_LEVEL.User)
 				return damageDone;
 			
 			// Friendly fire towards a survivor who is being ridden by a jockey or pummeled by a charger is already blocked by the game
@@ -549,7 +466,7 @@ const LOG_LEVEL_DEBUG = 4;
 			if (Left4Grief.Settings.friendly_fire == 0)
 				return -1; // Friendly fire OFF
 			
-			if (Left4Grief.L4F && Left4Fun.IsOnlineTroll(victim))
+			if (Left4Users.GetOnlineUserLevel(victim.GetPlayerUserId()) < L4U_LEVEL.User)
 				return damageDone;
 			
 			// Friendly fire towards a survivor who is being ridden by a jockey or pummeled by a charger is already blocked by the game
@@ -598,7 +515,7 @@ const LOG_LEVEL_DEBUG = 4;
 		
 		foreach (spec in ::Left4Utils.GetSpectators())
 		{
-			if (Left4Grief.IsOnlineAdmin(spec))
+			if (Left4Users.GetOnlineUserLevel(spec.GetPlayerUserId()) >= L4U_LEVEL.Admin)
 			{
 				local voteControllerEnt = Entities.FindByClassname(null, "vote_controller");
 				if (!voteControllerEnt)
@@ -641,7 +558,7 @@ const LOG_LEVEL_DEBUG = 4;
 		
 		Left4Grief.Log(LOG_LEVEL_INFO, "Vote casted by: " + player.GetPlayerName() + " (voteType: " + voteType + ")");
 		
-		if (Left4Grief.IsOnlineAdmin(player))
+		if (Left4Users.GetOnlineUserLevel(player.GetPlayerUserId()) >= L4U_LEVEL.Admin)
 			return true;
 		else if (Left4Grief.Settings.user_can_cast_vote == 0)
 			return false;
@@ -728,9 +645,9 @@ const LOG_LEVEL_DEBUG = 4;
 			return true;
 		}
 		
-		if (Left4Grief.IsOnlineAdmin(target))
+		if (Left4Users.GetOnlineUserLevel(target.GetPlayerUserId()) >= L4U_LEVEL.Admin)
 		{
-			if (Left4Grief.IsOnlineAdmin(caster))
+			if (Left4Users.GetOnlineUserLevel(caster.GetPlayerUserId()) >= L4U_LEVEL.Admin)
 				Left4Grief.Log(LOG_LEVEL_WARN, "Admin " + caster.GetPlayerName() + " tried to vote kick admin " + target.GetPlayerName());
 			else
 			{
@@ -762,7 +679,7 @@ const LOG_LEVEL_DEBUG = 4;
 		if (IsPlayerABot(healer))
 			return;
 
-		if (healer.GetPlayerUserId() == player.GetPlayerUserId() || NetProps.GetPropIntArray(player, "movetype", 0) != MOVETYPE_LADDER || Left4Grief.IsOnlineAdmin(healer))
+		if (healer.GetPlayerUserId() == player.GetPlayerUserId() || NetProps.GetPropIntArray(player, "movetype", 0) != MOVETYPE_LADDER || Left4Users.GetOnlineUserLevel(healer.GetPlayerUserId()) >= L4U_LEVEL.Admin)
 			return;
 		
 		if (Left4Grief.Settings.punish_heal_onladder)
@@ -846,7 +763,7 @@ const LOG_LEVEL_DEBUG = 4;
 		local arg0 = args[0].tolower();
 		local arg1 = args[1].tolower();
 		
-		if (arg0 == "!l4gsettings" && Left4Grief.IsOnlineAdmin(player))
+		if (arg0 == "!l4gsettings" && Left4Users.GetOnlineUserLevel(player.GetPlayerUserId()) >= L4U_LEVEL.Admin)
 		{
 			if (arg1 in Left4Grief.Settings)
 			{

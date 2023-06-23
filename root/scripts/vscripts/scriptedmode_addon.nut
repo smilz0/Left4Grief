@@ -70,7 +70,6 @@ function ScriptMode_Init( modename, mapname )
 	}
 	
 	IncludeScript("left4grief");
-	Left4Grief.Initialize(modename, mapname);
 	
 	return true;
 }

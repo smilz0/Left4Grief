@@ -5,11 +5,20 @@
 
 Msg("Including left4grief_events...\n");
 
-IncludeScript("left4lib_hooks");
-
 ::Left4Grief.Events.OnGameEvent_round_start <- function (params)
 {
-	Left4Grief.OnRoundStart(params);
+	Left4Grief.Log(LOG_LEVEL_DEBUG, "OnGameEvent_round_start");
+	
+	// Apparently, when scriptedmode is enabled and this director option isn't set, there is a big stutter (for the host)
+	// when a witch is chasing a survivor and that survivor enters the saferoom. Simply having a value for this key, removes the stutter
+	if (!("AllowWitchesInCheckpoints" in DirectorScript.GetDirectorOptions()))
+		DirectorScript.GetDirectorOptions().AllowWitchesInCheckpoints <- false;
+	
+	::ConceptsHub.SetHandler("Left4Grief", Left4Grief.OnConcept);
+	
+	Left4Timers.AddTimer("AntiRushCheck", ANTIRUSH_CHECK_DELAY, Left4Grief.AntiRushCheck, {}, true);
+	//Left4Timers.AddThinker("InvulnerabilityHandler", 0.2, Left4Grief.InvulnerabilityHandler, {});
+	Left4Timers.AddTimer("InvulnerabilityHandler", 0.2, Left4Grief.InvulnerabilityHandler, {}, true);
 }
 
 ::Left4Grief.Events.OnGameEvent_round_end <- function (params)
@@ -19,29 +28,20 @@ IncludeScript("left4lib_hooks");
 	local message = params["message"];
 	local time = params["time"];
 	
-	Left4Grief.OnRoundEnd(winner, reason, message, time, params);
+	Left4Grief.Log(LOG_LEVEL_DEBUG, "OnGameEvent_round_end - winner: " + winner + " - reason: " + reason + " - message: " + message + " - time: " + time);
+	
+	Left4Timers.RemoveTimer("AntiRushCheck");
+	//Left4Timers.RemoveThinker("InvulnerabilityHandler");
+	Left4Timers.RemoveTimer("InvulnerabilityHandler");
 }
 
 ::Left4Grief.Events.OnGameEvent_map_transition <- function (params)
 {
-	Left4Grief.OnMapTransition(params);
-}
-
-::Left4Grief.Events.OnGameEvent_player_say <- function (params)
-{
-	local player = 0;
-	if ("userid" in params)
-		player = params["userid"];
-	if (player != 0)
-		player = g_MapScript.GetPlayerFromUserID(player);
-	else
-		player = null;
-	local text = params["text"];
-	local args = {};
-	if (text != null && text != "")
-		args = split(text, " ");
+	Left4Grief.Log(LOG_LEVEL_DEBUG, "OnGameEvent_map_transition");
 	
-	Left4Grief.OnPlayerSay(player, text, args, params);
+	Left4Timers.RemoveTimer("AntiRushCheck");
+	//Left4Timers.RemoveThinker("InvulnerabilityHandler");
+	Left4Timers.RemoveTimer("InvulnerabilityHandler");
 }
 
 ::Left4Grief.Events.OnGameEvent_vote_cast_yes <- function (params)
@@ -339,19 +339,5 @@ IncludeScript("left4lib_hooks");
 	if (player && player.IsValid())
 		Left4Grief.CreatePanicEvent(player);
 }
-
-::Left4Grief.AllowTakeDamage <- function (damageTable)
-{
-	local dmg = ::Left4Grief.OnDamage(damageTable.Victim, damageTable.Attacker, damageTable.DamageDone, damageTable);
-	if (dmg < 0)
-		return false;
-
-	damageTable.DamageDone = dmg;
-	
-	return true;
-}
-
-HooksHub.SetAllowTakeDamage("L4G", ::Left4Grief.AllowTakeDamage);
-
 
 __CollectEventCallbacks(::Left4Grief.Events, "OnGameEvent_", "GameEventCallbacks", RegisterScriptGameEventListener);

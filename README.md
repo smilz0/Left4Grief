@@ -11,7 +11,7 @@ Forget about L4D2 trolls and griefers.
 - Anti-heal on ladder: stop falling off a ladder because of trolls
 
 
-## Addon settings
+### Addon settings
 The list of L4G settings can be found [HERE](https://github.com/smilz0/Left4Grief/blob/main/root/scripts/vscripts/left4grief_settings.nut).
 
 You can change the settings by editing the file `ems/left4grief/cfg/settings.txt` or directly ingame with the following commands:
@@ -19,7 +19,7 @@ You can change the settings by editing the file `ems/left4grief/cfg/settings.txt
 - Via console: `scripted_user_func l4g,settings,[setting],[value]`
 
 
-## Compatibility
+### Compatibility
 This addon is 100% compatible with [Left 4 Bots](https://steamcommunity.com/sharedfiles/filedetails/?id=2279814689) and [Left 4 Fun](https://steamcommunity.com/sharedfiles/filedetails/?id=1722866167).
 
 It's also compatible with Rayman1103's Admin System and most of the addons of the workshop.

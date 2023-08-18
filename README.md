@@ -12,7 +12,7 @@ Forget about L4D2 trolls and griefers.
 
 
 ## Addon settings
-The list of L4G settings can be found [HERE](https://gist.github.com/smilz0/36e7e517eee8944cde40489d342221f0).
+The list of L4G settings can be found [HERE](https://github.com/smilz0/Left4Grief/blob/main/root/scripts/vscripts/left4grief_settings.nut).
 
 You can change the settings by editing the file `ems/left4grief/cfg/settings.txt` or directly ingame with the following commands:
 - Via chat: `!l4g settings [setting] [value]`

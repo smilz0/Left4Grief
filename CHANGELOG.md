@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.1](https://github.com/smilz0/Left4Grief/tree/v1.1) (2023-10-09)
+
+[Full Changelog](https://github.com/smilz0/Left4Grief/compare/v1.0...v1.1)
+
+**Implemented enhancements:**
+
+- Overhauled requirement check script [\#1](https://github.com/smilz0/Left4Grief/issues/1)
+
 ## [v1.0](https://github.com/smilz0/Left4Grief/tree/v1.0) (2023-08-18)
 
 [Full Changelog](https://github.com/smilz0/Left4Grief/compare/022a9ab14f1c965fd19bc7485561dab611b4045c...v1.0)

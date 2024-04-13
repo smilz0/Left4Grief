@@ -3,6 +3,9 @@
 	// [1/0] 1 = Admins can abort any vote by voting NO
 	admin_can_abort_vote = 1
 	
+	// [1/0] If 1 it will disable any damage caused to propane/oxygen tanks using a chainsaw in order to prevent a server crash
+	anti_crash_chainsaw = 1
+	
 	// [1/0] Enable/Disable the anti disconnect grief code
 	// 1 = When a player throws a molotov/pipe bomb or shoots a grenade launcher and quickly disconnects, such damaging entities (flames, nades, projectiles etc..) are automatically removed from the map
 	// in order to prevent the friendly fire damage (which cannot be blocked as usual if the attacker is no longer in the game)

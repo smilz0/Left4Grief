@@ -340,4 +340,5 @@ Msg("Including left4grief_events...\n");
 		Left4Grief.CreatePanicEvent(player);
 }
 
+
 __CollectEventCallbacks(::Left4Grief.Events, "OnGameEvent_", "GameEventCallbacks", RegisterScriptGameEventListener);

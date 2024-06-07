@@ -95,8 +95,8 @@ IncludeScript("left4grief_settings");
 		return;
 	}
 	
-	::Left4Grief.ModeName = SessionState.ModeName;
-	::Left4Grief.MapName = SessionState.MapName;
+	::Left4Grief.ModeName = Director.GetGameMode();
+	::Left4Grief.MapName = Director.GetMapName();
 	::Left4Grief.Difficulty = Convars.GetStr("z_difficulty").tolower();
 
 	::Left4Grief.Log(LOG_LEVEL_INFO, "Initializing for game mode: " + ::Left4Grief.ModeName + " - map name: " + ::Left4Grief.MapName + " - difficulty: " + ::Left4Grief.Difficulty);
@@ -136,7 +136,7 @@ IncludeScript("left4grief_settings");
 	if (subjectid != null)
 		subject = g_MapScript.GetPlayerFromUserID(subjectid);
 	else if (subject)
-		subject = GetSurvivorFromActor(subject);
+		subject = Left4Utils.GetSurvivorFromActor(subject);
 */
 	
 	if (!who || !who.IsValid() || !("IsPlayer" in who) || !who.IsPlayer())

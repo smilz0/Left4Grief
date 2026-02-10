@@ -3,7 +3,7 @@
 	// [1/0] 1 = Admins can abort any vote by voting NO
 	admin_can_abort_vote = 1
 	
-	// [1/0] If 1 it will disable any damage caused to propane/oxygen tanks using a chainsaw in order to prevent a server crash
+	// [1/0] If 1 it will disable any damage caused to propane/oxygen tanks or ricochet ff damage using a chainsaw in order to prevent a server crash
 	anti_crash_chainsaw = 1
 	
 	// [1/0] Enable/Disable the anti disconnect grief code

@@ -313,12 +313,13 @@ IncludeScript("left4grief_settings");
 	if (damageTable.DamageDone == 0 || !damageTable.Attacker || !damageTable.Victim || !damageTable.Attacker.IsValid() || !damageTable.Victim.IsValid())
 		return true;
 	
-	if (::Left4Grief.Settings.anti_crash_chainsaw && ("Inflictor" in damageTable) && damageTable.Inflictor && damageTable.Inflictor.GetClassname() == "weapon_chainsaw")
+	local prevent_crash_chainsaw = ::Left4Grief.Settings.anti_crash_chainsaw && ("Inflictor" in damageTable) && damageTable.Inflictor && damageTable.Inflictor.GetClassname() == "weapon_chainsaw";
+	if (prevent_crash_chainsaw)
 	{
 		local mdl = damageTable.Victim.GetModelName();
 		if (mdl == "models/props_junk/propanecanister001a.mdl" || mdl == "models/props_equipment/oxygentank01.mdl")
 		{
-			// This will make the server crash if the explosion caused by this will make the attacker survivor incap
+			// This will make the server crash if the explosion caused by this makes the attacker survivor incap
 			::Left4Grief.Log(LOG_LEVEL_WARN, "Blocked bugged damage from " + damageTable.Attacker.GetPlayerName() + "'s chainsaw to " + mdl);
 			return false;
 		}
@@ -346,12 +347,12 @@ IncludeScript("left4grief_settings");
 	
 	// Friendly fire!
 
-	if (Left4Users.GetOnlineUserLevel(damageTable.Attacker.GetPlayerUserId()) >= L4U_LEVEL.Admin)
+	if (::Left4Users.GetOnlineUserLevel(damageTable.Attacker.GetPlayerUserId()) >= L4U_LEVEL.Admin)
 	{
 		if (::Left4Grief.Settings.friendly_fire_admins == 0)
 			return false; // Friendly fire OFF
 		
-		if (Left4Users.GetOnlineUserLevel(damageTable.Victim.GetPlayerUserId()) < L4U_LEVEL.User)
+		if (::Left4Users.GetOnlineUserLevel(damageTable.Victim.GetPlayerUserId()) < L4U_LEVEL.User)
 			return true;
 		
 		// Friendly fire towards a survivor who is being ridden by a jockey or pummeled by a charger is already blocked by the game
@@ -393,7 +394,7 @@ IncludeScript("left4grief_settings");
 		if (::Left4Grief.Settings.friendly_fire == 0)
 			return false; // Friendly fire OFF
 		
-		if (Left4Users.GetOnlineUserLevel(damageTable.Victim.GetPlayerUserId()) < L4U_LEVEL.User)
+		if (::Left4Users.GetOnlineUserLevel(damageTable.Victim.GetPlayerUserId()) < L4U_LEVEL.User)
 			return true;
 		
 		// Friendly fire towards a survivor who is being ridden by a jockey or pummeled by a charger is already blocked by the game
@@ -416,12 +417,16 @@ IncludeScript("left4grief_settings");
 				damageTable.Attacker.TakeDamage(damageTable.DamageDone * ::Left4Grief.Settings.ricochet_damagefactor, damageTable.DamageType, damageTable.Attacker);
 			*/
 			
-			if ((damageTable.DamageType & DMG_BURN) != 0)
-				damageTable.Attacker.TakeDamageEx(damageTable.Inflictor, damageTable.Attacker, damageTable.Weapon, Vector(0,0,0), damageTable.Location, damageTable.DamageDone * ::Left4Grief.Settings.ricochet_burn_damagefactor, damageTable.DamageType);
-			else if ((damageTable.DamageType & DMG_BLAST) != 0)
-				damageTable.Attacker.TakeDamageEx(damageTable.Inflictor, damageTable.Attacker, damageTable.Weapon, Vector(0,0,0), damageTable.Location, damageTable.DamageDone * ::Left4Grief.Settings.ricochet_blast_damagefactor, damageTable.DamageType);
-			else
-				damageTable.Attacker.TakeDamageEx(damageTable.Inflictor, damageTable.Attacker, damageTable.Weapon, Vector(0,0,0), damageTable.Location, damageTable.DamageDone * ::Left4Grief.Settings.ricochet_damagefactor, damageTable.DamageType);
+			// Apparently the server crash can be triggered also by the ricochet, so no ricochet for chainsaw damage if anti_crash_chainsaw = 1
+			if (!prevent_crash_chainsaw)
+			{
+				if ((damageTable.DamageType & DMG_BURN) != 0)
+					damageTable.Attacker.TakeDamageEx(damageTable.Inflictor, damageTable.Attacker, damageTable.Weapon, Vector(0,0,0), damageTable.Location, damageTable.DamageDone * ::Left4Grief.Settings.ricochet_burn_damagefactor, damageTable.DamageType);
+				else if ((damageTable.DamageType & DMG_BLAST) != 0)
+					damageTable.Attacker.TakeDamageEx(damageTable.Inflictor, damageTable.Attacker, damageTable.Weapon, Vector(0,0,0), damageTable.Location, damageTable.DamageDone * ::Left4Grief.Settings.ricochet_blast_damagefactor, damageTable.DamageType);
+				else
+					damageTable.Attacker.TakeDamageEx(damageTable.Inflictor, damageTable.Attacker, damageTable.Weapon, Vector(0,0,0), damageTable.Location, damageTable.DamageDone * ::Left4Grief.Settings.ricochet_damagefactor, damageTable.DamageType);
+			}
 
 			damageTable.DamageDone = 0.0001; // Damage is pretty much next to 0 and totally insignificant but there are 2 pros of returning this instead of 0:
 											 //  1. this will still be counted as friendly fire accident in the attacker's final stats (and in the console as "XXX attacked YYY")
